@@ -13,20 +13,18 @@ try:
 except ImportError:
     from backports import lzma
 
-DEFAULT_ISO639_3_CODE = 'eng'
-DEFAULT_SCHEMA_VERSION = 'v4'
-DEFAULT_BASE_URL = 'https://edge.ldscdn.org/mobile/GospelStudy/production/'
-DEFAULT_CACHE_PATH = '/tmp/python-gospel-library'
+
+from . import config
 
 
-def get_languages(schema_version=DEFAULT_SCHEMA_VERSION, base_url=DEFAULT_BASE_URL, session=requests.Session()):
+def get_languages(schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session()):
     languages_url = urljoin(base_url, '{schema_version}/languages/languages.json'.format(schema_version=schema_version))
     r = session.get(languages_url)
     if r.status_code == 200:
         return r.json()
 
 
-def current_catalog_version(iso639_3_code=DEFAULT_ISO639_3_CODE, schema_version=DEFAULT_SCHEMA_VERSION, base_url=DEFAULT_BASE_URL, session=requests.Session()):
+def current_catalog_version(iso639_3_code=config.DEFAULT_ISO639_3_CODE, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session()):
     index_url = urljoin(base_url, '{schema_version}/languages/{iso639_3_code}/index.json'.format(schema_version=schema_version, iso639_3_code=iso639_3_code))
     r = session.get(index_url)
     if r.status_code == 200:
@@ -34,7 +32,7 @@ def current_catalog_version(iso639_3_code=DEFAULT_ISO639_3_CODE, schema_version=
 
 
 class CatalogDB:
-    def __init__(self, iso639_3_code=DEFAULT_ISO639_3_CODE, catalog_version=None, schema_version=DEFAULT_SCHEMA_VERSION, base_url=DEFAULT_BASE_URL, session=requests.Session(), cache_path=DEFAULT_CACHE_PATH):
+    def __init__(self, iso639_3_code=config.DEFAULT_ISO639_3_CODE, catalog_version=None, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session(), cache_path=config.DEFAULT_CACHE_PATH):
         self.iso639_3_code = iso639_3_code
         self.catalog_version = catalog_version if catalog_version else current_catalog_version(iso639_3_code=iso639_3_code, schema_version=schema_version, base_url=base_url, session=session)
         self.schema_version = schema_version

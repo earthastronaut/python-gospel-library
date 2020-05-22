@@ -13,14 +13,11 @@ try:
 except ImportError:
     from backports import lzma
 
-DEFAULT_ISO639_3_CODE = 'eng'
-DEFAULT_SCHEMA_VERSION = 'v4'
-DEFAULT_BASE_URL = 'https://edge.ldscdn.org/mobile/GospelStudy/production/'
-DEFAULT_CACHE_PATH = '/tmp/python-gospel-library'
+from . import config
 
 
 class ItemPackage:
-    def __init__(self, item_id, item_version, iso639_3_code=DEFAULT_ISO639_3_CODE, schema_version=DEFAULT_SCHEMA_VERSION, base_url=DEFAULT_BASE_URL, session=requests.Session(), cache_path=DEFAULT_CACHE_PATH):
+    def __init__(self, item_id, item_version, iso639_3_code=config.DEFAULT_ISO639_3_CODE, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session(), cache_path=config.DEFAULT_CACHE_PATH):
         self.item_id = item_id
         self.item_version = item_version
         self.iso639_3_code = iso639_3_code
