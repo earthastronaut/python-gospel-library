@@ -8,7 +8,16 @@ from .compat import lzma, urljoin
 
 
 class ItemPackage:
-    def __init__(self, item_id, item_version, iso639_3_code=None, schema_version=None, base_url=None, session=None, cache_path=None):
+    def __init__(
+            self,
+            item_id,
+            item_version,
+            iso639_3_code=None,
+            schema_version=None,
+            base_url=None,
+            session=None,
+            cache_path=None
+    ):
         iso639_3_code = (iso639_3_code or config.DEFAULT_ISO639_3_CODE)
         schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
         base_url = (base_url or config.DEFAULT_BASE_URL)
@@ -24,12 +33,29 @@ class ItemPackage:
         self.cache_path = cache_path
 
     def exists(self):
-        return self.__fetch_item_package() is not None
+        return self._fetch_item_package() is not None
 
-    def __fetch_item_package(self):
-        item_package_path = os.path.join(self.cache_path, self.schema_version, 'languages', self.iso639_3_code, 'item_packages', self.item_id, str(self.item_version), 'Package.sqlite')
+    def _fetch_item_package(self):
+        item_package_path = os.path.join(
+            self.cache_path,
+            self.schema_version,
+            'languages',
+            self.iso639_3_code,
+            'item_packages',
+            self.item_id,
+            str(self.item_version),
+            'Package.sqlite'
+        )
         if not os.path.isfile(item_package_path):
-            item_package_xz_url = urljoin(self.base_url, '{schema_version}/languages/{iso639_3_code}/item-packages/{item_id}/{item_version}.xz'.format(schema_version=self.schema_version, iso639_3_code=self.iso639_3_code, item_id=self.item_id, item_version=self.item_version))
+            item_package_xz_url = urljoin(
+                self.base_url,
+                '{schema_version}/languages/{iso639_3_code}/item-packages/{item_id}/{item_version}.xz'.format(
+                    schema_version=self.schema_version,
+                    iso639_3_code=self.iso639_3_code,
+                    item_id=self.item_id,
+                    item_version=self.item_version,
+                )
+            )
             r = self.session.get(item_package_xz_url)
             if r.status_code == 200:
                 try:
@@ -56,21 +82,21 @@ class ItemPackage:
         return obj
 
     def file_id(self):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
         with sqlite3.connect(item_package_path) as db:
             c = db.cursor()
             try:
-                c.execute('''SELECT value FROM metadata WHERE key='file_id' LIMIT 1''')
+                c.execute("""SELECT value FROM metadata WHERE key='file_id' LIMIT 1""")
                 row = c.fetchone()
                 return row[0] if row else None
             finally:
                 c.close()
 
     def html(self, subitem_uri=None, paragraph_id=None):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -80,17 +106,27 @@ class ItemPackage:
             c = db.cursor()
             try:
                 if paragraph_id:
-                    c.execute('''SELECT content_html, start_index, end_index FROM paragraph_metadata
-                                     INNER JOIN subitem_content ON paragraph_metadata.subitem_id=subitem_content.subitem_id
-                                     INNER JOIN subitem ON subitem_content.subitem_id=subitem.id
-                                 WHERE uri=? AND paragraph_id=?''', [subitem_uri, paragraph_id])
+                    query = """
+                        SELECT content_html, start_index, end_index
+                        FROM
+                            paragraph_metadata
+                            INNER JOIN subitem_content ON paragraph_metadata.subitem_id=subitem_content.subitem_id
+                            INNER JOIN subitem ON subitem_content.subitem_id=subitem.id
+                        WHERE uri=? AND paragraph_id=?
+                    """
+                    c.execute(query, [subitem_uri, paragraph_id])
                     (html, start_index, end_index) = c.fetchone()
 
                     return html[start_index:end_index].decode('utf-8')
                 else:
-                    c.execute('''SELECT content_html FROM subitem_content
-                                     INNER JOIN subitem ON subitem_content.subitem_id=subitem.id
-                                 WHERE uri=?''', [subitem_uri])
+                    query = """
+                        SELECT content_html
+                        FROM
+                            subitem_content
+                            INNER JOIN subitem ON subitem_content.subitem_id=subitem.id
+                        WHERE uri=?
+                    """
+                    c.execute(query, [subitem_uri])
                     (html,) = c.fetchone()
 
                     return html[:].decode('utf-8')
@@ -99,7 +135,7 @@ class ItemPackage:
                 db.text_factory = original_text_factory
 
     def subitems(self):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -107,13 +143,13 @@ class ItemPackage:
             db.row_factory = self.dict_factory
             c = db.cursor()
             try:
-                c.execute('''SELECT * FROM subitem ORDER BY position''')
+                c.execute("""SELECT * FROM subitem ORDER BY position""")
                 return c.fetchall()
             finally:
                 c.close()
 
     def subitem(self, uri):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -121,30 +157,30 @@ class ItemPackage:
             db.row_factory = self.dict_factory
             c = db.cursor()
             try:
-                c.execute('''SELECT * FROM subitem WHERE uri=?''', [uri])
+                c.execute("""SELECT * FROM subitem WHERE uri=?""", [uri])
                 return c.fetchone()
             finally:
                 c.close()
 
     def subitem_html(self, subitem_id):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
         with sqlite3.connect(item_package_path) as db:
             c = db.cursor()
             try:
-                c.execute('''SELECT content_html FROM subitem_content WHERE subitem_id=? LIMIT 1''', [subitem_id])
+                c.execute("""SELECT content_html FROM subitem_content WHERE subitem_id=? LIMIT 1""", [subitem_id])
                 row = c.fetchone()
                 return row[0]
             finally:
                 c.close()
 
     def path(self):
-        return os.path.dirname(self.__fetch_item_package())
+        return os.path.dirname(self._fetch_item_package())
 
     def related_audio_items(self, subitem_id):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -152,13 +188,13 @@ class ItemPackage:
             db.row_factory = self.dict_factory
             c = db.cursor()
             try:
-                c.execute('''SELECT * FROM related_audio_item WHERE subitem_id=?''', [subitem_id])
+                c.execute("""SELECT * FROM related_audio_item WHERE subitem_id=?""", [subitem_id])
                 return c.fetchall()
             finally:
                 c.close()
 
     def related_video_items(self, subitem_id):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -166,7 +202,7 @@ class ItemPackage:
             db.row_factory = self.dict_factory
             c = db.cursor()
             try:
-                c.execute('''SELECT * FROM related_video_item WHERE subitem_id=?''', [subitem_id])
+                c.execute("""SELECT * FROM related_video_item WHERE subitem_id=?""", [subitem_id])
                 return c.fetchall()
             finally:
                 c.close()
@@ -174,7 +210,7 @@ class ItemPackage:
     def table_exists(self, db, table_name):
         c = db.cursor()
         try:
-            c.execute('''SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?''', [table_name])
+            c.execute("""SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?""", [table_name])
             return c.fetchone()[0] == 1
         finally:
             c.close()
@@ -182,7 +218,7 @@ class ItemPackage:
         return False
 
     def related_content_items(self, subitem_id):
-        item_package_path = self.__fetch_item_package()
+        item_package_path = self._fetch_item_package()
         if not item_package_path:
             return None
 
@@ -190,7 +226,7 @@ class ItemPackage:
             db.row_factory = self.dict_factory
             c = db.cursor()
             try:
-                c.execute('''SELECT * FROM related_content_item WHERE subitem_id=?''', [subitem_id])
+                c.execute("""SELECT * FROM related_content_item WHERE subitem_id=?""", [subitem_id])
                 return c.fetchall()
             finally:
                 c.close()
