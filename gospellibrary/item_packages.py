@@ -3,17 +3,8 @@ import requests
 import os
 import sqlite3
 
-try:
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin
-
-try:
-    import lzma
-except ImportError:
-    from backports import lzma
-
 from . import config
+from .compat import lzma, urljoin
 
 
 class ItemPackage:

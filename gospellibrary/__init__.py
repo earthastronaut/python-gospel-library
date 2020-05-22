@@ -1,5 +1,9 @@
 from . import (
     config,
+    compat,
 )
 
-__all__ = ['config']
+__all__ = [
+    'config',
+    'compat',
+]
