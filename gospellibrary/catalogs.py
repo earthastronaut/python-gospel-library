@@ -7,6 +7,13 @@ from . import config
 from .compat import lzma, urljoin
 
 
+__all__ = [
+    'get_languages',
+    'current_catalog_version',
+    'CatalogDB',
+]
+
+
 def get_languages(schema_version=None, base_url=None, session=None):
     schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
     base_url = (base_url or config.DEFAULT_BASE_URL)

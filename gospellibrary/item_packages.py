@@ -6,6 +6,10 @@ import sqlite3
 from . import config
 from .compat import lzma, urljoin
 
+__all__ = [
+    'ItemPackage',
+]
+
 
 class ItemPackage:
     def __init__(
