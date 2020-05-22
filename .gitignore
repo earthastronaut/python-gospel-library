@@ -1,9 +1,17 @@
-.DS_Store
+# Project
+.gospellibrarycache
+
+# Python
 *.pyc
+*.egg-info
+.virtualenv
+
+# MacOS
+.DS_Store
+
+# Editors
 .project
 .pydevproject
 .settings
 .idea
-.gospellibrarycache
-.virtualenv
 .python-version
