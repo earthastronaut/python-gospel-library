@@ -1,10 +1,10 @@
 from io import BytesIO
-import requests
 import os
 import sqlite3
 
 from . import config
 from .compat import lzma, urljoin
+from .client import create_session
 
 
 __all__ = [
@@ -17,7 +17,7 @@ __all__ = [
 def get_languages(schema_version=None, base_url=None, session=None):
     schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
     base_url = (base_url or config.DEFAULT_BASE_URL)
-    session = (session or requests.Session())
+    session = (session or create_session())
 
     languages_url = urljoin(
         base_url,
@@ -38,7 +38,7 @@ def current_catalog_version(
     iso639_3_code = (iso639_3_code or config.DEFAULT_ISO639_3_CODE)
     schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
     base_url = (base_url or config.DEFAULT_BASE_URL)
-    session = (session or requests.Session())
+    session = (session or create_session())
 
     index_url = urljoin(
         base_url,
@@ -66,7 +66,7 @@ class CatalogDB:
         schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
         base_url = (base_url or config.DEFAULT_BASE_URL)
         cache_path = (cache_path or config.DEFAULT_CACHE_PATH)
-        session = (session or requests.Session())
+        session = (session or create_session())
         if catalog_version is None:
             catalog_version = current_catalog_version(
                 iso639_3_code=iso639_3_code,
