@@ -8,7 +8,13 @@ from .compat import lzma, urljoin
 
 
 class ItemPackage:
-    def __init__(self, item_id, item_version, iso639_3_code=config.DEFAULT_ISO639_3_CODE, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session(), cache_path=config.DEFAULT_CACHE_PATH):
+    def __init__(self, item_id, item_version, iso639_3_code=None, schema_version=None, base_url=None, session=None, cache_path=None):
+        iso639_3_code = (iso639_3_code or config.DEFAULT_ISO639_3_CODE)
+        schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
+        base_url = (base_url or config.DEFAULT_BASE_URL)
+        cache_path = (cache_path or config.DEFAULT_CACHE_PATH)
+        session = (session or requests.Session())
+
         self.item_id = item_id
         self.item_version = item_version
         self.iso639_3_code = iso639_3_code

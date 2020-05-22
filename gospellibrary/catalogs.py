@@ -3,28 +3,27 @@ import requests
 import os
 import sqlite3
 
-try:
-    from urllib.parse import urljoin
-except ImportError:
-    from urlparse import urljoin
-
-try:
-    import lzma
-except ImportError:
-    from backports import lzma
-
-
 from . import config
+from .compat import lzma, urljoin
 
 
-def get_languages(schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session()):
+def get_languages(schema_version=None, base_url=None, session=None):
+    schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
+    base_url = (base_url or config.DEFAULT_BASE_URL)
+    session = (session or requests.Session())
+
     languages_url = urljoin(base_url, '{schema_version}/languages/languages.json'.format(schema_version=schema_version))
     r = session.get(languages_url)
     if r.status_code == 200:
         return r.json()
 
 
-def current_catalog_version(iso639_3_code=config.DEFAULT_ISO639_3_CODE, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session()):
+def current_catalog_version(iso639_3_code=None, schema_version=None, base_url=None, session=None):
+    iso639_3_code = (iso639_3_code or config.DEFAULT_ISO639_3_CODE)
+    schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
+    base_url = (base_url or config.DEFAULT_BASE_URL)
+    session = (session or requests.Session())
+
     index_url = urljoin(base_url, '{schema_version}/languages/{iso639_3_code}/index.json'.format(schema_version=schema_version, iso639_3_code=iso639_3_code))
     r = session.get(index_url)
     if r.status_code == 200:
@@ -32,9 +31,23 @@ def current_catalog_version(iso639_3_code=config.DEFAULT_ISO639_3_CODE, schema_v
 
 
 class CatalogDB:
-    def __init__(self, iso639_3_code=config.DEFAULT_ISO639_3_CODE, catalog_version=None, schema_version=config.DEFAULT_SCHEMA_VERSION, base_url=config.DEFAULT_BASE_URL, session=requests.Session(), cache_path=config.DEFAULT_CACHE_PATH):
+    def __init__(self, iso639_3_code=None, catalog_version=None, schema_version=None, base_url=None, session=None, cache_path=None):
+        
+        iso639_3_code = (iso639_3_code or config.DEFAULT_ISO639_3_CODE)
+        schema_version = (schema_version or config.DEFAULT_SCHEMA_VERSION)
+        base_url = (base_url or config.DEFAULT_BASE_URL)
+        cache_path = (cache_path or config.DEFAULT_CACHE_PATH)
+        session = (session or requests.Session())
+        if catalog_version is None:
+            catalog_version = current_catalog_version(
+                iso639_3_code=iso639_3_code,
+                schema_version=schema_version,
+                base_url=base_url,
+                session=session,
+            )
+
         self.iso639_3_code = iso639_3_code
-        self.catalog_version = catalog_version if catalog_version else current_catalog_version(iso639_3_code=iso639_3_code, schema_version=schema_version, base_url=base_url, session=session)
+        self.catalog_version = catalog_version
         self.schema_version = schema_version
         self.base_url = base_url
         self.session = session
