@@ -125,25 +125,34 @@ class CatalogDB:
         for i, column in enumerate(cursor.description):
             name = column[0]
             value = row[i]
-            if name not in obj:
-                if name in ['version', 'latest_version'] and value is not None:
-                    obj['version'] = value
-                if name in ['cover_renditions', 'item_cover_renditions'] and value is not None:
-                    base_url = urljoin(self.base_url, self.schema_version)
+            if value is None:
+                continue
 
-                    renditions = []
-                    for rendition in value.splitlines():
-                        size, url = rendition.split(',', 1)
-                        width, height = size.split('x', 1)
-                        renditions.append(dict(
-                            width=width,
-                            height=height,
-                            url=urljoin(base_url, url),
-                        ))
-                    obj[name] = renditions
-                    obj['raw_' + name] = value
-                else:
-                    obj[name] = value
+            if name in obj:
+                continue
+
+            if name in ['version', 'latest_version']:
+                obj['version'] = value
+            if name in ['cover_renditions', 'item_cover_renditions', 'image_renditions']:
+                base_url = urljoin(self.base_url, self.schema_version)
+
+                renditions = []
+                for rendition in value.splitlines():
+                    size, url = rendition.split(',', 1)
+                    width, height = size.split('x', 1)
+
+                    if not url.startswith('http'):
+                        url = urljoin(base_url, url)
+
+                    renditions.append(dict(
+                        width=width,
+                        height=height,
+                        url=url,
+                    ))
+                obj[name] = renditions
+                obj['raw_' + name] = value
+            else:
+                obj[name] = value
         return obj
 
     def execute(self, query, params=None):
