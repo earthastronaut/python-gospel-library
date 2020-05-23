@@ -13,6 +13,16 @@ def get_version():
     raise Exception('Could not find version!')
 
 
+def get_requirements():
+    with open('requirements.txt') as f:
+        lines = f.readlines()
+    return [
+        line.rstrip()
+        for line in lines
+        if len(line.rstrip())
+    ]
+
+
 setup(
     name='python-gospel-library',
     version=get_version(),
@@ -20,8 +30,5 @@ setup(
     license='MIT',
     description='Python package that parses Gospel Library content.',
     long_description=open('README.md').read(),
-    install_requires=[
-        'requests>=2.4.3',
-        'backports.lzma>=0.0.13'
-    ],
+    install_requires=get_requirements(),
 )
