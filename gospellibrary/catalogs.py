@@ -146,140 +146,89 @@ class CatalogDB:
                     obj[name] = value
         return obj
 
-    def language_name(self, language_id):
+    def execute(self, query, params=None):
         catalog_path = self._fetch_catalog()
         if not catalog_path:
             return None
 
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
+        with sqlite3.connect(catalog_path) as conn:
+            conn.row_factory = self.dict_factory
+            cursor = conn.cursor()
             try:
-                c.execute("""SELECT name FROM language_name WHERE language_id=?""", [language_id])
-                row = c.fetchone()
-                return row['name'] if row else None
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
+                return cursor.fetchall()
             finally:
-                c.close()
+                cursor.close()
+
+    def language_name(self, language_id):
+        rows = self.execute("""
+            SELECT name FROM language_name WHERE language_id=? LIMIT 1
+        """, [language_id])
+        return rows[0]['name'] if rows else None
 
     def item_categories(self):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                c.execute("""SELECT * FROM item_category""")
-                return c.fetchall()
-            finally:
-                c.close()
+        return self.execute("""SELECT * FROM item_category""")
 
     def collection(self, collection_id):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                c.execute("""SELECT * FROM library_collection WHERE id=?""", [collection_id])
-                return c.fetchone()
-            finally:
-                c.close()
+        rows = self.execute("""SELECT * FROM library_collection WHERE id=? LIMIT 1""", [collection_id])
+        return rows[0] if rows else None
 
     def sections(self, collection_id):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                query = """
-                    SELECT *
-                    FROM library_section
-                    WHERE library_collection_id=?
-                    ORDER BY position
-                """
-                c.execute(query, [collection_id])
-                return c.fetchall()
-            finally:
-                c.close()
+        return self.execute("""
+            SELECT *
+            FROM library_section
+            WHERE library_collection_id=?
+            ORDER BY position
+        """, [collection_id])
 
     def collections(self, section_ids):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                query = """
-                    SELECT *
-                    FROM library_collection
-                    WHERE library_section_id IN ({})
-                    ORDER BY position
-                """.format(','.join('?' * len(section_ids)))
-                c.execute(query, section_ids)
-                return c.fetchall()
-            finally:
-                c.close()
+        section_ids = (section_ids or [])
+        query = """
+            SELECT *
+            FROM library_collection
+            WHERE library_section_id IN ({})
+            ORDER BY position
+        """.format(','.join('?' * len(section_ids)))
+        return self.execute(query, section_ids)
 
     def items(self, section_ids=None):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                if section_ids is not None:
-                    query = """
-                        SELECT item.*, library_item.*
-                        FROM
-                            library_item
-                            INNER JOIN item ON library_item.item_id=item.id
-                        WHERE library_section_id IN ({})
-                        ORDER BY position
-                    """.format(','.join('?' * len(section_ids)))
-                    c.execute(query, section_ids)
-                else:
-                    query = """
-                        SELECT item.*, library_item.*
-                        FROM
-                            library_item
-                            INNER JOIN item ON library_item.item_id=item.id
-                        ORDER BY external_id
-                    """
-                    c.execute(query)
-                return c.fetchall()
-            finally:
-                c.close()
+        if section_ids is not None:
+            query = """
+                SELECT item.*, library_item.*
+                FROM
+                    library_item
+                    INNER JOIN item ON library_item.item_id=item.id
+                WHERE library_section_id IN ({})
+                ORDER BY position
+            """.format(','.join('?' * len(section_ids)))
+            return self.execute(query, section_ids)
+        else:
+            query = """
+                SELECT item.*, library_item.*
+                FROM
+                    library_item
+                    INNER JOIN item ON library_item.item_id=item.id
+                ORDER BY external_id
+            """
+            return self.execute(query)
 
     def nodes(self, section_ids):
+        """ When viewing a collection there are either references to other
+        collections or references to items. The combination of these
+        two are nodes.
+
+        """
         return sorted(
             self.collections(section_ids) + self.items(section_ids),
             key=lambda node: node['position']
         )
 
     def item(self, item_id=None, uri=None):
-        catalog_path = self._fetch_catalog()
-        if not catalog_path:
-            return None
-
-        with sqlite3.connect(catalog_path) as db:
-            db.row_factory = self.dict_factory
-            c = db.cursor()
-            try:
-                if item_id:
-                    c.execute("""SELECT * FROM item WHERE id=?""", [item_id])
-                else:
-                    c.execute("""SELECT * FROM item WHERE uri=?""", [uri])
-                return c.fetchone()
-            finally:
-                c.close()
+        if item_id:
+            rows = self.execute("""SELECT * FROM item WHERE id=? LIMIT 1""", [item_id])
+        else:
+            rows = self.execute("""SELECT * FROM item WHERE uri=? LIMIT 1""", [uri])
+        return rows[0] if rows else None
