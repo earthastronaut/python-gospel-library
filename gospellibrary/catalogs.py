@@ -172,6 +172,19 @@ class CatalogDB:
             finally:
                 cursor.close()
 
+    def languages(self):
+        return self.execute("""
+            SELECT language.*, language_name.*
+            FROM
+                language
+                LEFT OUTER JOIN (
+                    SELECT *
+                    FROM language_name
+                    WHERE localization_language_id=1
+                ) language_name ON language.id=language_name.language_id
+            ORDER BY lds
+        """)
+
     def language_name(self, language_id):
         rows = self.execute("""
             SELECT name FROM language_name WHERE language_id=? LIMIT 1
