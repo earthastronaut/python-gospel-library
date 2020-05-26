@@ -52,6 +52,29 @@ def current_catalog_version(
         return r.json().get('catalogVersion', None)
 
 
+def transform_renditions(cover_renditions, base_url=None):
+    """ Converts the flat renditions string to individual objects
+    """
+    renditions = []
+    for rendition in cover_renditions.splitlines():
+        size, url = rendition.split(',', 1)
+        width, height = size.split('x', 1)
+        if not url.startswith('http'):
+            if not base_url:
+                raise ValueError(
+                    'Base URL must be passed when url is not complete: {}'
+                    .format(rendition)
+                )
+            url = urljoin(base_url, url)
+
+        renditions.append(dict(
+            width=int(width),
+            height=int(height),
+            url=url,
+        ))
+    return renditions
+
+
 class CatalogDB:
     def __init__(
             self,
@@ -135,21 +158,7 @@ class CatalogDB:
                 obj['version'] = value
             if name in ['cover_renditions', 'item_cover_renditions', 'image_renditions']:
                 base_url = urljoin(self.base_url, self.schema_version)
-
-                renditions = []
-                for rendition in value.splitlines():
-                    size, url = rendition.split(',', 1)
-                    width, height = size.split('x', 1)
-
-                    if not url.startswith('http'):
-                        url = urljoin(base_url, url)
-
-                    renditions.append(dict(
-                        width=width,
-                        height=height,
-                        url=url,
-                    ))
-                obj[name] = renditions
+                obj[name] = transform_renditions(value, base_url=base_url)
                 obj['raw_' + name] = value
             else:
                 obj[name] = value
